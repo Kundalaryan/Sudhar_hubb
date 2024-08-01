@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
+import 'package:test_app/forget_password.dart';
 import 'package:test_app/provider/auth_provider.dart';
 import 'package:test_app/signup_page.dart';
 
@@ -104,7 +105,9 @@ class _LoginPageState extends State<LoginPage> {
         Align(
           alignment: Alignment.centerRight,
           child:TextButton(
-              onPressed: () {},
+              onPressed: () {
+                Navigator.push(context, MaterialPageRoute(builder: (context)=>ForgotPassword()));
+              },
               child:
               const Text("Forgot password?",
                   style: TextStyle(color: Colors.black,),

@@ -1,6 +1,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:test_app/comment_page.dart';
 
 class MyHomePage extends StatelessWidget {
   @override
@@ -236,7 +237,13 @@ class _PostCardState extends State<PostCard> {
                           padding: const EdgeInsets.only(left: 8.0),
                           child: IconButton(
                             onPressed: () {
-                              // Navigate to comments page
+                              Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                    builder: (context) => commentPage(),
+                                  )
+                              );
+
                             },
                             icon: Icon(Icons.chat_bubble_outline),
                             iconSize: 30,
@@ -257,14 +264,14 @@ class _PostCardState extends State<PostCard> {
                   Padding(
                     padding: const EdgeInsets.all(8.0),
                     child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                    Text(
-                      '${postData['username'] ?? 'Anonymous'}: ${postData['Caption'] ?? 'No caption'}',
-                      style: const TextStyle(fontSize: 16),
-                     ),
-                    ]
-                   ),
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            '${postData['username'] ?? 'Anonymous'}: ${postData['Caption'] ?? 'No caption'}',
+                            style: const TextStyle(fontSize: 16),
+                          ),
+                        ]
+                    ),
                   ),
                 ],
               ),
