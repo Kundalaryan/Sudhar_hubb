@@ -40,6 +40,8 @@ class _PostCardState extends State<PostCard> {
 
   String? selectedReason;
 
+  Map<String, bool> showLocationMap = {};
+
   void selectReason(String? reason) {
     setState(() {
       selectedReason = reason;
@@ -62,7 +64,11 @@ class _PostCardState extends State<PostCard> {
       );
     }
   }
-
+  void toggleLocation(String postId) {
+    setState(() {
+      showLocationMap[postId] = !(showLocationMap[postId] ?? false);
+    });
+  }
   @override
   Widget build(BuildContext context) {
     return StreamBuilder<QuerySnapshot>(
@@ -75,7 +81,7 @@ class _PostCardState extends State<PostCard> {
           itemBuilder: (context, index) {
             DocumentSnapshot post = snapshot.data!.docs[index];
             Map<String, dynamic> postData = post.data() as Map<String, dynamic>;
-
+            String postId =post.id;
             // Track likes and dislikes independently for each post
             int likesCount = postData['likesCount'] ?? 0;
             int dislikesCount = postData['dislikesCount'] ?? 0;
@@ -250,17 +256,28 @@ class _PostCardState extends State<PostCard> {
                           ),
                         ),
                         const Spacer(),
-                        IconButton(
-                          onPressed: () {
-                            // Handle location icon tap
-                          },
-                          icon: const Icon(Icons.location_on_outlined),
-                          iconSize: 30,
-                          color: Colors.black,
-                        ),
+                        if (showLocationMap[postId] ?? false)
+                           GestureDetector(
+                           onTap: () {
+                           toggleLocation(postId);
+                           },
+                         child:  Text(
+                            postData['location'] ?? 'No location',
+                            style: const TextStyle(fontSize: 16),
+                          )
+                           )else
+                          IconButton(
+                            onPressed: () {
+                              toggleLocation(postId);
+                            },
+                            icon: const Icon(Icons.location_on_outlined),
+                            iconSize: 30,
+                            color: Colors.black,
+                          ),
                       ],
                     ),
                   ),
+
                   Padding(
                     padding: const EdgeInsets.all(8.0),
                     child: Column(
