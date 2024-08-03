@@ -1,6 +1,5 @@
 
 import 'package:flutter/material.dart';
-import 'package:test_app/setting_item.dart';
 
 
 class AccountScreen extends StatefulWidget {

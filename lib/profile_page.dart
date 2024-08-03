@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:test_app/account_screen.dart';
 import 'package:test_app/provider/auth_provider.dart';
 import 'package:test_app/provider/theme_provider.dart';
 
@@ -19,13 +20,19 @@ class _ProfilePageState extends State<ProfilePage> {
         title: Text('Profile'),
         actions: [
           IconButton(
-            icon: Icon(
-              themeProvider.currentTheme == ThemeData.dark()
+            icon: Icon(Icons.menu
+             /* themeProvider.currentTheme == ThemeData.dark()
                   ? Icons.light_mode
-                  : Icons.dark_mode,
+                  : Icons.dark_mode,*/
             ),
             onPressed: () {
-              themeProvider.toggleTheme();
+             // themeProvider.toggleTheme();
+              Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                  builder: (context) => AccountScreen(),
+              ),
+              );
             },
           ),
         ],
