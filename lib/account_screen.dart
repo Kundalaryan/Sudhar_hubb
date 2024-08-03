@@ -1,6 +1,6 @@
-
 import 'package:flutter/material.dart';
-
+import 'login_page.dart';
+import 'edit_profile_page.dart'; // Import the EditProfilePage
 
 class AccountScreen extends StatefulWidget {
   const AccountScreen({super.key});
@@ -11,16 +11,24 @@ class AccountScreen extends StatefulWidget {
 
 class _AccountScreenState extends State<AccountScreen> {
   bool isDarkMode = false;
+  String selectedLanguage = 'English'; // Default language
+
+  final List<String> languages = ['English', 'Hindi']; // Add more languages here
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
+
         leading: IconButton(
-          onPressed: () {},
+          onPressed: () {
+            Navigator.pop(context);
+          },
           icon: const Icon(Icons.arrow_back_ios),
         ),
+        title: Text('Settings'),
         leadingWidth: 60,
+
       ),
       body: SingleChildScrollView(
         child: Padding(
@@ -28,126 +36,137 @@ class _AccountScreenState extends State<AccountScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const Text(
-                "Settings",
-                style: TextStyle(
-                  fontSize: 36,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
+
               const SizedBox(height: 30),
-              const Text(
-                "Account",
-                style: TextStyle(
-                  fontSize: 24,
-                  fontWeight: FontWeight.w500,
-                ),
+
+              const SizedBox(height: 20),
+              _buildSettingOption(
+                icon: Icons.language_outlined,
+                color: Colors.red,
+                title: "Language",
+                subtitle: selectedLanguage,
+                onTap: () {
+                  _showLanguageDialog();
+                },
               ),
               const SizedBox(height: 20),
-              SizedBox(
-                width: double.infinity,
-                child: Row(
-                  children: [
-                    Image.asset(
-                        'assets/images/avatar.png',
-                        width: 50, height: 60),
-                    const SizedBox(width: 20),
-                    const Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          "Arvind",
-                          style: TextStyle(
-                            fontSize: 18,
-                            fontWeight: FontWeight.w500,
-                          ),
-                        ),
-                        SizedBox(height: 10),
-                        Text(
-                          "....",
-                          style: TextStyle(
-                            fontSize: 14,
-                            color: Colors.grey,
-                          ),
-                        )
-                      ],
+              _buildSettingOption(
+                icon: Icons.edit_outlined,
+                color: Colors.blue,
+                title: "Edit Profile",
+                subtitle: "",
+                onTap: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) =>  EditProfilePage(),
                     ),
-                    const Spacer(),
-                   Container(
-                     width: 40,
-                     height: 60,
-                     decoration: BoxDecoration(
-                       color: Colors.grey.shade200,
-                       borderRadius: BorderRadius.circular(10),
-                     ),
-                         child: IconButton(
-                           icon: Icon(Icons.menu
-                           ),
-                           onPressed: () {
-
-                             Navigator.push(
-                               context,
-                               MaterialPageRoute(
-                                 builder: (context) => AccountScreen(),
-                               ),
-                             );
-                           },
-                         ),
-                     ),
-                  ],
-                ),
-              ),
-              const SizedBox(height: 40),
-              const Text(
-                "Settings",
-                style: TextStyle(
-                  fontSize: 24,
-                  fontWeight: FontWeight.w500,
-                ),
+                  );
+                },
               ),
               const SizedBox(height: 20),
-              Container(
-                width: double.infinity,
-                child: Row(
-                  children: [
-                    Container(
-                      height: 50,
-                      width: 50,
-                      decoration: BoxDecoration(
-                        shape: BoxShape.circle,
-                        color: Colors.red.shade100,
-                      ),
-                      child: Icon(Icons.language_outlined,
-                        color: Colors.red,
-                      )
-                      ),
-                const SizedBox(width: 20),
-                Text(
-                  "Language",
-                  style: TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.w500,
-                  ),
-                ),
-                    const Spacer(),
-                    Text(
-                      "English",
-                      style: TextStyle(
-                        fontSize: 16,
-                        color: Colors.grey,
-                      ),
+              _buildSettingOption(
+                icon: isDarkMode ? Icons.dark_mode_outlined : Icons.light_mode_outlined,
+                color: isDarkMode ? Colors.yellow : Colors.blue,
+                title: "Mode",
+                subtitle: isDarkMode ? "Dark" : "Light",
+                onTap: () {
+                  setState(() {
+                    isDarkMode = !isDarkMode;
+                  });
+                },
+              ),
+              const SizedBox(height: 20),
+              _buildSettingOption(
+                icon: Icons.logout_outlined,
+                color: Colors.red,
+                title: "Log Out",
+                subtitle: "",
+                onTap: () {
+                  Navigator.pushReplacement(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => LoginPage(),
                     ),
-                    const SizedBox(width: 20,)
-
-                  ],
-                ),
-              )
-
+                  );
+                },
+              ),
             ],
           ),
         ),
       ),
     );
   }
-}
 
+  void _showLanguageDialog() {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: const Text('Select Language'),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: languages.map((language) {
+              return ListTile(
+                title: Text(language),
+                onTap: () {
+                  setState(() {
+                    selectedLanguage = language;
+                  });
+                  Navigator.pop(context);
+                },
+              );
+            }).toList(),
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildSettingOption({
+    required IconData icon,
+    required Color color,
+    required String title,
+    required String subtitle,
+    void Function()? onTap,
+  }) {
+    return Container(
+      width: double.infinity,
+      child: Row(
+        children: [
+          Container(
+            height: 50,
+            width: 50,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              color: color.withOpacity(0.1),
+            ),
+            child: Icon(icon, color: color),
+          ),
+          const SizedBox(width: 20),
+          Text(
+            title,
+            style: const TextStyle(
+              fontSize: 16,
+              fontWeight: FontWeight.w500,
+            ),
+          ),
+          const Spacer(),
+          Text(
+            subtitle,
+            style: const TextStyle(
+              fontSize: 16,
+              color: Colors.grey,
+            ),
+          ),
+          const SizedBox(width: 20),
+          if (onTap != null)
+            IconButton(
+              icon: const Icon(Icons.arrow_forward_ios, size: 16),
+              onPressed: onTap,
+            ),
+        ],
+      ),
+    );
+  }
+}
