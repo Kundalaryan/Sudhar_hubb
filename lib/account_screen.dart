@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:test_app/provider/auth_provider.dart';
 import 'package:test_app/provider/theme_provider.dart';
-import 'login_page.dart';
 import 'edit_profile_page.dart'; // Import the EditProfilePage
 
 class AccountScreen extends StatefulWidget {
@@ -86,12 +86,7 @@ class _AccountScreenState extends State<AccountScreen> {
                 title: "Log Out",
                 subtitle: "",
                 onTap: () {
-                  Navigator.pushReplacement(
-                    context,
-                    MaterialPageRoute(
-                      builder: (context) => LoginPage(),
-                    ),
-                  );
+                  Provider.of<AuthProvider>(context, listen: false).logout(context);
                 },
               ),
             ],

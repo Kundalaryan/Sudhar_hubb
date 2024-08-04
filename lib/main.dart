@@ -2,6 +2,8 @@ import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:test_app/firebase_options.dart';
+import 'package:test_app/home_page.dart';
+import 'package:test_app/login_page.dart';
 import 'package:test_app/provider/auth_provider.dart';
 import 'package:test_app/provider/theme_provider.dart';
 import 'package:test_app/splash_screen.dart';
@@ -21,14 +23,18 @@ class MyApp extends StatelessWidget {
       ChangeNotifierProvider(create: (_)=>ThemeProvider())  ,
           ChangeNotifierProvider(create: (_)=>AuthProvider())
         ],
-      child: Consumer< ThemeProvider>(
-        builder: (context,themeProvider,child){
+      child: Consumer2< ThemeProvider,AuthProvider>(
+        builder: (context,themeProvider,authProvider,child){
     return MaterialApp(
        debugShowCheckedModeBanner: false,
         title: 'Test_App',
 
       theme: themeProvider.currentTheme,
       home: SplashScreen(),
+      routes: {
+        '/home': (context) => const HomePage(),
+        '/login': (context) => LoginPage(),
+      },
 
        );
       },
