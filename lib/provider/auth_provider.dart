@@ -31,7 +31,7 @@ class AuthProvider with ChangeNotifier {
       await FirebaseFirestore.instance.collection('users').doc(userCredential.user!.uid).set({
         'username': username,
         'email': email,
-        'photoUrl': '',
+        'profilePicture': '',
       });
 
       notifyListeners();
@@ -193,6 +193,15 @@ class AuthProvider with ChangeNotifier {
       // Handle any errors that occur during the fetch
       print('Error fetching user posts: $e');
       return [];
+    }
+  }
+
+  Future<void> updateProfilePicture(String imageUrl) async {
+    if (_user != null) {
+      await FirebaseFirestore.instance.collection('users').doc(_user!.uid).update({
+        'profilePicture': imageUrl,
+      });
+      notifyListeners();
     }
   }
 }

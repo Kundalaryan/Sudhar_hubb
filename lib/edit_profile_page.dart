@@ -1,6 +1,96 @@
 import 'package:flutter/material.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:firebase_storage/firebase_storage.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:image_picker/image_picker.dart';
+import 'dart:io';
 
-class EditProfilePage extends StatelessWidget {
+class EditProfilePage extends StatefulWidget {
+  @override
+  _EditProfilePageState createState() => _EditProfilePageState();
+}
+
+class _EditProfilePageState extends State<EditProfilePage> {
+  final _usernameController = TextEditingController();
+  final _nameController = TextEditingController();
+  final _emailController = TextEditingController();
+  final _addressController = TextEditingController();
+  File? _profileImage;
+  String _profileImageUrl = ''; // Store the URL of the existing profile image
+  final ImagePicker _picker = ImagePicker();
+  final FirebaseAuth _auth = FirebaseAuth.instance;
+  final FirebaseFirestore _firestore = FirebaseFirestore.instance;
+  final FirebaseStorage _storage = FirebaseStorage.instance;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadUserProfile();
+  }
+
+  Future<void> _loadUserProfile() async {
+    User? user = _auth.currentUser;
+    if (user != null) {
+      DocumentSnapshot userDoc = await _firestore.collection('users').doc(user.uid).get();
+      Map<String, dynamic> userData = userDoc.data() as Map<String, dynamic>;
+
+      setState(() {
+        _usernameController.text = userData['username'] ?? '';
+        _nameController.text = userData['name'] ?? '';
+        _emailController.text = userData['email'] ?? '';
+        _addressController.text = userData['address'] ?? '';
+        _profileImageUrl = userData['profilePicture'] ?? '';
+      });
+
+      // Load the existing profile image from the URL
+      if (_profileImageUrl.isNotEmpty) {
+        _loadProfileImage();
+      }
+    }
+  }
+
+  Future<void> _loadProfileImage() async {
+    try {
+      final image = await _storage.refFromURL(_profileImageUrl).getData();
+      if (image != null) {
+        setState(() {
+          _profileImage = File.fromRawPath(image);
+        });
+      }
+    } catch (e) {
+      print('Error loading profile image: $e');
+    }
+  }
+
+  Future<void> _updateProfile() async {
+    User? user = _auth.currentUser;
+    if (user != null) {
+      String profilePicUrl = _profileImageUrl; // Use existing image URL by default
+      if (_profileImage != null) {
+        final ref = _storage.ref().child('profile_pics/${user.uid}');
+        await ref.putFile(_profileImage!);
+        profilePicUrl = await ref.getDownloadURL();
+      }
+      await _firestore.collection('users').doc(user.uid).update({
+        'username': _usernameController.text,
+        'name': _nameController.text,
+        'email': _emailController.text,
+        'address': _addressController.text,
+        'profilePicture': profilePicUrl,
+      });
+      Navigator.pop(context);
+    }
+  }
+
+  Future<void> _pickImage(ImageSource source) async {
+    final pickedFile = await _picker.pickImage(source: source);
+    if (pickedFile != null) {
+      setState(() {
+        _profileImage = File(pickedFile.path);
+      });
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -8,9 +98,7 @@ class EditProfilePage extends StatelessWidget {
         title: Text('Edit Profile'),
         actions: [
           TextButton(
-            onPressed: () {
-              // Handle save action
-            },
+            onPressed: _updateProfile,
             child: Text(
               'Save',
               style: TextStyle(
@@ -30,21 +118,19 @@ class EditProfilePage extends StatelessWidget {
             Center(
               child: Stack(
                 children: [
-                  Container(
-                    width: 120,
-                    height: 120,
-                    decoration: BoxDecoration(
-                      shape: BoxShape.circle,
-                      border: Border.all(
-                        color: Colors.grey[300]!,
-                        width: 4,
-                      ),
-                    ),
-                    child: CircleAvatar(
-                      radius: 60,
-                      backgroundColor: Colors.grey[300],
-                      backgroundImage: AssetImage('assets/images/avatar.png'),
-                    ),
+                  _profileImage != null
+                      ? CircleAvatar(
+                    radius: 60,
+                    backgroundImage: FileImage(_profileImage!),
+                  )
+                      : _profileImageUrl.isNotEmpty
+                      ? CircleAvatar(
+                    radius: 60,
+                    backgroundImage: NetworkImage(_profileImageUrl),
+                  )
+                      : CircleAvatar(
+                    radius: 60,
+                    backgroundImage: AssetImage('assets/images/avatar.png'),
                   ),
                   Positioned(
                     bottom: 0,
@@ -59,9 +145,7 @@ class EditProfilePage extends StatelessWidget {
                           Icons.camera_alt,
                           color: Colors.white,
                         ),
-                        onPressed: () {
-                          // Handle change profile picture
-                        },
+                        onPressed: () => _showImageSourceActionSheet(context),
                       ),
                     ),
                   ),
@@ -70,49 +154,75 @@ class EditProfilePage extends StatelessWidget {
             ),
             SizedBox(height: 20),
             TextFormField(
-              initialValue: 'Username',
+              controller: _usernameController,
               decoration: InputDecoration(
                 labelText: 'Username',
                 border: OutlineInputBorder(),
               ),
               style: TextStyle(fontSize: 16),
-              // onChanged: (value) {}, // Handle username change
             ),
             SizedBox(height: 12),
             TextFormField(
-              initialValue: 'Name',
+              controller: _nameController,
               decoration: InputDecoration(
                 labelText: 'Name',
                 border: OutlineInputBorder(),
               ),
               style: TextStyle(fontSize: 16),
-              // onChanged: (value) {}, // Handle name change
             ),
-
             SizedBox(height: 12),
             TextFormField(
-              initialValue: 'Email',
+              controller: _emailController,
               decoration: InputDecoration(
                 labelText: 'Email',
                 border: OutlineInputBorder(),
               ),
               style: TextStyle(fontSize: 16),
-              // onChanged: (value) {}, // Handle website change
+              readOnly: true,
             ),
             SizedBox(height: 12),
             TextFormField(
-              initialValue: 'Address',
+              controller: _addressController,
               maxLines: 3,
               decoration: InputDecoration(
                 labelText: 'Address',
                 border: OutlineInputBorder(),
               ),
               style: TextStyle(fontSize: 16),
-              // onChanged: (value) {}, // Handle bio change
             ),
           ],
         ),
       ),
+    );
+  }
+
+  void _showImageSourceActionSheet(BuildContext context) {
+    showModalBottomSheet(
+      context: context,
+      builder: (context) {
+        return SafeArea(
+          child: Wrap(
+            children: <Widget>[
+              ListTile(
+                leading: Icon(Icons.photo_library),
+                title: Text('Gallery'),
+                onTap: () {
+                  _pickImage(ImageSource.gallery);
+                  Navigator.of(context).pop();
+                },
+              ),
+              ListTile(
+                leading: Icon(Icons.photo_camera),
+                title: Text('Camera'),
+                onTap: () {
+                  _pickImage(ImageSource.camera);
+                  Navigator.of(context).pop();
+                },
+              ),
+            ],
+          ),
+        );
+      },
     );
   }
 }

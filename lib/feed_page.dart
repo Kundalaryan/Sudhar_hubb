@@ -122,10 +122,15 @@ class _PostCardState extends State<PostCard> {
     return commentsSnapshot.size;
   }
 
+  Future<Map<String, dynamic>> getUserProfile(String userId) async {
+    DocumentSnapshot userDoc = await _firestore.collection('users').doc(userId).get();
+    return userDoc.data() as Map<String, dynamic>;
+  }
+
   @override
   Widget build(BuildContext context) {
     return StreamBuilder<QuerySnapshot>(
-      stream: _firestore.collection('posts').snapshots(),
+      stream: _firestore.collection('posts').orderBy('timestamp', descending: true).snapshots(),
       builder: (context, snapshot) {
         if (!snapshot.hasData) return Center(child: CircularProgressIndicator());
 
@@ -135,214 +140,221 @@ class _PostCardState extends State<PostCard> {
             DocumentSnapshot post = snapshot.data!.docs[index];
             Map<String, dynamic> postData = post.data() as Map<String, dynamic>;
             String postId = post.id;
+            String userId = postData['userId'];
 
             List<String> likes = List<String>.from(postData['likes'] ?? []);
             List<String> dislikes = List<String>.from(postData['dislikes'] ?? []);
             bool hasLiked = likes.contains(currentUserId);
             bool hasDisliked = dislikes.contains(currentUserId);
 
-            return Container(
-              margin: const EdgeInsets.symmetric(vertical: 8.0),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  ListTile(
-                    dense: true,
-                    title: Text(
-                      postData['username'] ?? 'Anonymous',
-                      style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15),
-                    ),
-                    leading: CircleAvatar(
-                      backgroundImage: postData['profilePicture'] != null && postData['profilePicture'] != ''
-                          ? NetworkImage(postData['profilePicture'])
-                          : null,
-                      child: postData['profilePicture'] == null || postData['profilePicture'] == ''
-                          ? Icon(Icons.person, color: Colors.white)
-                          : null,
-                    ),
-                    trailing: IconButton(
-                      icon: const Icon(
-                        Icons.report_outlined,
-                        color: Colors.black,
-                      ),
-                      onPressed: () {
-                        showDialog(
-                          context: context,
-                          builder: (BuildContext context) {
-                            return StatefulBuilder(
-                              builder: (BuildContext context, StateSetter setState) {
-                                return AlertDialog(
-                                  title: const Text("Report Post"),
-                                  content: Column(
-                                    mainAxisSize: MainAxisSize.min,
-                                    crossAxisAlignment: CrossAxisAlignment.start,
-                                    children: reportReasons
-                                        .map(
-                                          (reason) => RadioListTile<String>(
-                                        title: Text(reason),
-                                        value: reason,
-                                        groupValue: selectedReason,
-                                        onChanged: (value) {
-                                          selectReason(value);
-                                        },
-                                      ),
-                                    )
-                                        .toList(),
-                                  ),
-                                  actions: <Widget>[
-                                    TextButton(
-                                      child: const Text("Report"),
-                                      onPressed: () {
-                                        reportPost();
-                                        Navigator.of(context).pop();
-                                      },
-                                    ),
-                                    TextButton(
-                                      child: const Text("Cancel"),
-                                      onPressed: () {
-                                        Navigator.of(context).pop();
-                                      },
-                                    ),
-                                  ],
-                                );
-                              },
-                            );
-                          },
-                        );
-                      },
-                    ),
-                  ),
-                  Image.network(
-                    postData['imageUrl'] ?? '',
-                    height: 300,
-                    width: double.infinity,
-                    fit: BoxFit.cover,
-                  ),
-                  Padding(
-                    padding: const EdgeInsets.all(8.0),
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        GestureDetector(
-                          onTap: () {
-                            updateLikeStatus(postId, true);
-                          },
-                          child: Row(
-                            children: [
-                              Icon(
-                                Icons.thumb_up,
-                                size: 30,
-                                color: hasLiked ? Colors.blue : Colors.grey,
-                              ),
-                              const SizedBox(width: 5),
-                              Text(
-                                '${likes.length}',
-                                style: const TextStyle(fontSize: 18),
-                              ),
-                            ],
-                          ),
+            return FutureBuilder<Map<String, dynamic>>(
+              future: getUserProfile(userId),
+              builder: (context, userSnapshot) {
+                if (!userSnapshot.hasData) return Container();
+
+                Map<String, dynamic> userData = userSnapshot.data!;
+                String username = userData['username'] ?? 'Anonymous';
+                String profilePicture = userData['profilePicture'] ?? '';
+
+                return Container(
+                  margin: const EdgeInsets.symmetric(vertical: 8.0),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      ListTile(
+                        dense: true,
+                        title: Text(
+                          username,
+                          style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15),
                         ),
-                        const SizedBox(width: 20),
-                        GestureDetector(
-                          onTap: () {
-                            updateLikeStatus(postId, false);
-                          },
-                          child: Row(
-                            children: [
-                              Icon(
-                                Icons.thumb_down,
-                                size: 30,
-                                color: hasDisliked ? Colors.red : Colors.grey,
-                              ),
-                              const SizedBox(width: 5),
-                              Text(
-                                '${dislikes.length}',
-                                style: const TextStyle(fontSize: 18),
-                              ),
-                            ],
-                          ),
+                        leading: CircleAvatar(
+                          backgroundImage: profilePicture.isNotEmpty
+                              ? NetworkImage(profilePicture)
+                              : null,
+                          child: profilePicture.isEmpty
+                              ? Icon(Icons.person, color: Colors.white)
+                              : null,
                         ),
-                        Padding(
-                          padding: const EdgeInsets.only(left: 8.0),
-                          child: IconButton(
-                            onPressed: () {
-                              Navigator.push(
-                                context,
-                                MaterialPageRoute(
-                                  builder: (context) => CommentPage(postId: postId),
-                                ),
-                              );
-                            },
-                            icon: Icon(Icons.chat_bubble_outline),
-                            iconSize: 30,
-                          ),
-                        ),
-                        const Spacer(),
-                        if (showLocationMap[postId] ?? false)
-                          GestureDetector(
-                            onTap: () {
-                              toggleLocation(postId);
-                            },
-                            child: Text(
-                              postData['location'] ?? 'No location',
-                              style: const TextStyle(fontSize: 16),
-                            ),
-                          )
-                        else
-                          IconButton(
-                            onPressed: () {
-                              toggleLocation(postId);
-                            },
-                            icon: const Icon(Icons.location_on_outlined),
-                            iconSize: 30,
+                        trailing: IconButton(
+                          icon: const Icon(
+                            Icons.report_outlined,
                             color: Colors.black,
                           ),
-                      ],
-                    ),
-                  ),
-                  Padding(
-                    padding: const EdgeInsets.all(8.0),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          '${postData['username'] ?? 'Anonymous'}: ${postData['Caption'] ?? 'No caption'}',
-                          style: const TextStyle(fontSize: 16),
-                        ),
-                        StreamBuilder<QuerySnapshot>(
-                          stream: _firestore.collection('posts').doc(postId).collection('comments').snapshots(),
-                          builder: (context, snapshot) {
-                            if (!snapshot.hasData) {
-                              return const Text('Loading comments...');
-                            }
-
-                            int commentsCount = snapshot.data!.size;
-
-                            return GestureDetector(
-                              onTap: () {
-                                Navigator.push(
-                                  context,
-                                  MaterialPageRoute(
-                                    builder: (context) => CommentPage(postId: postId),
-                                  ),
+                          onPressed: () {
+                            showDialog(
+                              context: context,
+                              builder: (BuildContext context) {
+                                return StatefulBuilder(
+                                  builder: (BuildContext context, StateSetter setState) {
+                                    return AlertDialog(
+                                      title: const Text("Report Post"),
+                                      content: Column(
+                                        mainAxisSize: MainAxisSize.min,
+                                        crossAxisAlignment: CrossAxisAlignment.start,
+                                        children: reportReasons
+                                            .map(
+                                              (reason) => RadioListTile<String>(
+                                            title: Text(reason),
+                                            value: reason,
+                                            groupValue: selectedReason,
+                                            onChanged: (value) {
+                                              selectReason(value);
+                                            },
+                                          ),
+                                        )
+                                            .toList(),
+                                      ),
+                                      actions: <Widget>[
+                                        TextButton(
+                                          child: const Text("Report"),
+                                          onPressed: () {
+                                            reportPost();
+                                            Navigator.of(context).pop();
+                                          },
+                                        ),
+                                        TextButton(
+                                          child: const Text("Cancel"),
+                                          onPressed: () {
+                                            Navigator.of(context).pop();
+                                          },
+                                        ),
+                                      ],
+                                    );
+                                  },
                                 );
                               },
-                              child: Text(
-                                'View all $commentsCount comments',
-                                style: const TextStyle(
-                                  fontSize: 16,
-                                  color: Colors.blue,
-                                  fontWeight: FontWeight.bold,
-                                ),
-                              ),
                             );
                           },
                         ),
-                      ],
-                    ),
+                      ),
+                      Image.network(
+                        postData['imageUrl'] ?? '',
+                        height: 300,
+                        width: double.infinity,
+                        fit: BoxFit.cover,
+                      ),
+                      Padding(
+                        padding: const EdgeInsets.all(8.0),
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            GestureDetector(
+                              onTap: () {
+                                updateLikeStatus(postId, true);
+                              },
+                              child: Row(
+                                children: [
+                                  Icon(
+                                    Icons.thumb_up,
+                                    size: 30,
+                                    color: hasLiked ? Colors.blue : Colors.grey,
+                                  ),
+                                  const SizedBox(width: 5),
+                                  Text(
+                                    '${likes.length}',
+                                    style: const TextStyle(fontSize: 18),
+                                  ),
+                                ],
+                              ),
+                            ),
+                            const SizedBox(width: 20),
+                            GestureDetector(
+                              onTap: () {
+                                updateLikeStatus(postId, false);
+                              },
+                              child: Row(
+                                children: [
+                                  Icon(
+                                    Icons.thumb_down,
+                                    size: 30,
+                                    color: hasDisliked ? Colors.red : Colors.grey,
+                                  ),
+                                  const SizedBox(width: 5),
+                                  Text(
+                                    '${dislikes.length}',
+                                    style: const TextStyle(fontSize: 18),
+                                  ),
+                                ],
+                              ),
+                            ),
+                            Padding(
+                              padding: const EdgeInsets.only(left: 8.0),
+                              child: IconButton(
+                                onPressed: () {
+                                  Navigator.push(
+                                    context,
+                                    MaterialPageRoute(
+                                      builder: (context) => CommentPage(postId: postId),
+                                    ),
+                                  );
+                                },
+                                icon: Icon(Icons.chat_bubble_outline),
+                                iconSize: 30,
+                              ),
+                            ),
+                            const Spacer(),
+                            if (showLocationMap[postId] ?? false)
+                              GestureDetector(
+                                onTap: () {
+                                  toggleLocation(postId);
+                                },
+                                child: Text(
+                                  postData['location'] ?? 'No location',
+                                  style: const TextStyle(fontSize: 16),
+                                ),
+                              )
+                            else
+                              IconButton(
+                                onPressed: () {
+                                  toggleLocation(postId);
+                                },
+                                icon: const Icon(Icons.location_on_outlined),
+                                iconSize: 30,
+                                color: Colors.black,
+                              ),
+                          ],
+                        ),
+                      ),
+                      Padding(
+                        padding: const EdgeInsets.all(8.0),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              '$username: ${postData['Caption'] ?? 'No caption'}',
+                              style: const TextStyle(fontSize: 16),
+                            ),
+                            StreamBuilder<QuerySnapshot>(
+                              stream: _firestore.collection('posts').doc(postId).collection('comments').snapshots(),
+                              builder: (context, snapshot) {
+                                if (!snapshot.hasData) {
+                                  return const Text('Loading comments...');
+                                }
+
+                                int commentsCount = snapshot.data!.size;
+
+                                return GestureDetector(
+                                  onTap: () {
+                                    Navigator.push(
+                                      context,
+                                      MaterialPageRoute(
+                                        builder: (context) => CommentPage(postId: postId),
+                                      ),
+                                    );
+                                  },
+                                  child: Text(
+                                    'View all $commentsCount comments...',
+                                  ),
+                                );
+                              },
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
                   ),
-                ],
-              ),
+                );
+              },
             );
           },
         );
@@ -350,3 +362,4 @@ class _PostCardState extends State<PostCard> {
     );
   }
 }
+

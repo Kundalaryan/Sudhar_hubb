@@ -17,10 +17,28 @@ class _CommentPageState extends State<CommentPage> {
   final TextEditingController _commentController = TextEditingController();
   final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
 
-  @override
-  void dispose() {
-    _commentController.dispose();
-    super.dispose();
+  Future<Map<String, dynamic>> _fetchUserDetails(String userId) async {
+    try {
+      DocumentSnapshot userDoc = await _firestore.collection('users').doc(userId).get();
+      return userDoc.data() as Map<String, dynamic>;
+    } catch (e) {
+      print(e);
+      return {};
+    }
+  }
+
+  Future<void> _deleteComment(String commentId) async {
+    try {
+      await _firestore.collection('posts').doc(widget.postId).collection('comments').doc(commentId).delete();
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Comment deleted')),
+      );
+    } catch (e) {
+      print(e);
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Failed to delete comment')),
+      );
+    }
   }
 
   Future<void> _addComment(String text) async {
@@ -28,19 +46,22 @@ class _CommentPageState extends State<CommentPage> {
 
     try {
       User? user = FirebaseAuth.instance.currentUser;
-      String profilePicUrl = user?.photoURL ?? ''; // Fetch profile picture URL
+      if (user != null) {
+        Map<String, dynamic> userDetails = await _fetchUserDetails(user.uid);
+        String profilePicUrl = userDetails['profilePicture'] ?? '';
 
-      await _firestore.collection('posts').doc(widget.postId).collection('comments').add({
-        'text': text,
-        'createdAt': Timestamp.now(),
-        'userId': user?.uid,
-        'username': user?.displayName ?? 'Anonymous',
-        'profilePicUrl': profilePicUrl, // Add profile picture URL
-      });
+        await _firestore.collection('posts').doc(widget.postId).collection('comments').add({
+          'text': text,
+          'createdAt': Timestamp.now(),
+          'userId': user.uid,
+          'username': user.displayName ?? 'Anonymous',
+          'profilePicUrl': profilePicUrl,
+        });
 
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Comment added')),
-      );
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Comment added')),
+        );
+      }
     } catch (e) {
       print(e);
       ScaffoldMessenger.of(context).showSnackBar(
@@ -81,21 +102,33 @@ class _CommentPageState extends State<CommentPage> {
                     DocumentSnapshot comment = snapshot.data!.docs[index];
                     Map<String, dynamic> commentData = comment.data() as Map<String, dynamic>;
 
-                    return ListTile(
-                      leading: CircleAvatar(
-                        backgroundImage: commentData['profilePicUrl'] != null && commentData['profilePicUrl'] != ''
-                            ? NetworkImage(commentData['profilePicUrl'])
-                            : null,
-                        child: commentData['profilePicUrl'] == null || commentData['profilePicUrl'] == ''
-                            ? Text(commentData['username']?.substring(0, 1) ?? 'A')
-                            : null,
-                      ),
-                      title: Text(commentData['username'] ?? 'Anonymous'),
-                      subtitle: Text(commentData['text'] ?? ''),
-                      trailing: Text(
-                        timeAgo(commentData['createdAt']),
-                        style: TextStyle(color: Colors.grey),
-                      ),
+                    return FutureBuilder<Map<String, dynamic>>(
+                      future: _fetchUserDetails(commentData['userId']),
+                      builder: (context, userSnapshot) {
+                        String profilePicUrl = userSnapshot.data?['profilePicture'] ?? '';
+                        String username = userSnapshot.data?['username'] ?? commentData['username'] ?? 'Anonymous';
+
+                        return ListTile(
+                          leading: CircleAvatar(
+                            backgroundImage: profilePicUrl.isNotEmpty
+                                ? NetworkImage(profilePicUrl)
+                                : null,
+                            child: profilePicUrl.isEmpty
+                                ? Text(username.substring(0, 1))
+                                : null,
+                          ),
+                          title: Text(username),
+                          subtitle: Text(commentData['text'] ?? ''),
+                          trailing: commentData['userId'] == FirebaseAuth.instance.currentUser?.uid
+                              ? IconButton(
+                            icon: Icon(Icons.delete, color: Colors.red),
+                            onPressed: () {
+                              _showDeleteConfirmationDialog(comment.id);
+                            },
+                          )
+                              : null,
+                        );
+                      },
                     );
                   },
                 );
@@ -138,6 +171,33 @@ class _CommentPageState extends State<CommentPage> {
           ),
         ],
       ),
+    );
+  }
+
+  void _showDeleteConfirmationDialog(String commentId) {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: Text('Delete Comment'),
+          content: Text('Are you sure you want to delete this comment?'),
+          actions: [
+            TextButton(
+              onPressed: () {
+                Navigator.of(context).pop();
+              },
+              child: Text('Cancel'),
+            ),
+            TextButton(
+              onPressed: () {
+                _deleteComment(commentId);
+                Navigator.of(context).pop();
+              },
+              child: Text('Delete'),
+            ),
+          ],
+        );
+      },
     );
   }
 

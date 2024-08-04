@@ -3,18 +3,25 @@ import 'package:provider/provider.dart';
 import 'package:test_app/account_screen.dart';
 import 'package:test_app/provider/auth_provider.dart';
 
-
 class ProfilePage extends StatefulWidget {
   @override
   State<ProfilePage> createState() => _ProfilePageState();
 }
 
 class _ProfilePageState extends State<ProfilePage> {
+  late Future<Map<String, dynamic>> _userDetailsFuture;
+  late Future<List<String>> _userPostsFuture;
+
+  @override
+  void initState() {
+    super.initState();
+    final authProvider = Provider.of<AuthProvider>(context, listen: false);
+    _userDetailsFuture = authProvider.getProfileDetails();
+    _userPostsFuture = authProvider.getUserPosts();
+  }
+
   @override
   Widget build(BuildContext context) {
-    final authProvider = Provider.of<AuthProvider>(context);
-
-
     return Scaffold(
       appBar: AppBar(
         title: Text('Profile'),
@@ -23,10 +30,10 @@ class _ProfilePageState extends State<ProfilePage> {
             icon: Icon(Icons.menu),
             onPressed: () {
               Navigator.push(
-                  context,
-                  MaterialPageRoute(
+                context,
+                MaterialPageRoute(
                   builder: (context) => AccountScreen(),
-              ),
+                ),
               );
             },
           ),
@@ -34,10 +41,10 @@ class _ProfilePageState extends State<ProfilePage> {
       ),
       body: FutureBuilder(
         future: Future.wait([
-          authProvider.getProfileDetails(),
-          authProvider.getUserPosts(),
+          _userDetailsFuture,
+          _userPostsFuture,
         ]),
-        builder: (context, snapshot) {
+        builder: (context, AsyncSnapshot<List<dynamic>> snapshot) {
           if (snapshot.connectionState == ConnectionState.waiting) {
             return Center(child: CircularProgressIndicator());
           }
@@ -57,11 +64,10 @@ class _ProfilePageState extends State<ProfilePage> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.center,
                     children: [
-                      userDetails['profilePicture'] != null
+                      userDetails['profilePicture'] != null && userDetails['profilePicture'].isNotEmpty
                           ? CircleAvatar(
                         radius: 50,
-                        backgroundImage: NetworkImage(
-                            userDetails['profilePicture']),
+                        backgroundImage: NetworkImage(userDetails['profilePicture']),
                       )
                           : CircleAvatar(
                         radius: 50,
