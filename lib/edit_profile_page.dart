@@ -43,7 +43,7 @@ class EditProfilePage extends StatelessWidget {
                     child: CircleAvatar(
                       radius: 60,
                       backgroundColor: Colors.grey[300],
-                      backgroundImage: AssetImage('assets/default_profile.jpg'),
+                      backgroundImage: AssetImage('assets/images/avatar.png'),
                     ),
                   ),
                   Positioned(

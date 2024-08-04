@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:test_app/account_screen.dart';
 import 'package:test_app/provider/auth_provider.dart';
-import 'package:test_app/provider/theme_provider.dart';
+
 
 class ProfilePage extends StatefulWidget {
   @override
@@ -13,20 +13,15 @@ class _ProfilePageState extends State<ProfilePage> {
   @override
   Widget build(BuildContext context) {
     final authProvider = Provider.of<AuthProvider>(context);
-    final themeProvider = Provider.of<ThemeProvider>(context);
+
 
     return Scaffold(
       appBar: AppBar(
         title: Text('Profile'),
         actions: [
           IconButton(
-            icon: Icon(Icons.menu
-             /* themeProvider.currentTheme == ThemeData.dark()
-                  ? Icons.light_mode
-                  : Icons.dark_mode,*/
-            ),
+            icon: Icon(Icons.menu),
             onPressed: () {
-             // themeProvider.toggleTheme();
               Navigator.push(
                   context,
                   MaterialPageRoute(

@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+import 'package:test_app/provider/theme_provider.dart';
 import 'login_page.dart';
 import 'edit_profile_page.dart'; // Import the EditProfilePage
 
@@ -17,6 +19,7 @@ class _AccountScreenState extends State<AccountScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final themeProvider = Provider.of<ThemeProvider>(context); // Get the ThemeProvider instance
     return Scaffold(
       appBar: AppBar(
 
@@ -66,13 +69,13 @@ class _AccountScreenState extends State<AccountScreen> {
               ),
               const SizedBox(height: 20),
               _buildSettingOption(
-                icon: isDarkMode ? Icons.dark_mode_outlined : Icons.light_mode_outlined,
-                color: isDarkMode ? Colors.yellow : Colors.blue,
+                icon: themeProvider.isDarkTheme ? Icons.dark_mode_outlined : Icons.light_mode_outlined,
+                color: themeProvider.isDarkTheme ? Colors.yellow : Colors.blue,
                 title: "Mode",
-                subtitle: isDarkMode ? "Dark" : "Light",
+                subtitle: themeProvider.isDarkTheme ? "Dark Mode" : "Light Mode",
                 onTap: () {
                   setState(() {
-                    isDarkMode = !isDarkMode;
+                    themeProvider.toggleTheme();
                   });
                 },
               ),
