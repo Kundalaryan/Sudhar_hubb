@@ -150,9 +150,22 @@ class _NextScreenState extends State<NextScreen> {
       return;
     }
 
-    setState(() {
-      isLoading = true;
-    });
+    // Show the loading dialog
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          content: Row(
+            children: [
+              CircularProgressIndicator(),
+              SizedBox(width: 20),
+              Text('Uploading...'),
+            ],
+          ),
+        );
+      },
+    );
 
     try {
       // Upload image to Firebase Storage
@@ -179,23 +192,20 @@ class _NextScreenState extends State<NextScreen> {
         'timestamp': Timestamp.now(),
       });
 
-      setState(() {
-        isLoading = false;
-      });
+      Navigator.pop(context); // Dismiss the loading dialog
 
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('Post uploaded successfully!')),
       );
 
-      Navigator.pop(context);
+      Navigator.pop(context); // Navigate back to the previous screen
     } catch (e) {
-      setState(() {
-        isLoading = false;
-      });
+      Navigator.pop(context); // Dismiss the loading dialog
 
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('Failed to upload post: $e')),
       );
     }
   }
+
 }
