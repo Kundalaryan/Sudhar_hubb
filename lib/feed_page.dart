@@ -1,4 +1,5 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:test_app/comment_page.dart';
@@ -29,6 +30,16 @@ class PostCard extends StatefulWidget {
 
 class _PostCardState extends State<PostCard> {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
+  final FirebaseAuth _auth = FirebaseAuth.instance;
+
+  late String currentUserId;
+  Map<String, bool> showLocationMap = {};
+
+  @override
+  void initState() {
+    super.initState();
+    currentUserId = _auth.currentUser?.uid ?? '';
+  }
 
   List<String> reportReasons = [
     'Inappropriate content',
@@ -39,8 +50,6 @@ class _PostCardState extends State<PostCard> {
   ];
 
   String? selectedReason;
-
-  Map<String, bool> showLocationMap = {};
 
   void selectReason(String? reason) {
     setState(() {
@@ -62,13 +71,57 @@ class _PostCardState extends State<PostCard> {
           content: Text("Post reported"),
         ),
       );
+      // Clear the selected reason after reporting
+      setState(() {
+        selectedReason = null;
+      });
     }
   }
+
   void toggleLocation(String postId) {
     setState(() {
       showLocationMap[postId] = !(showLocationMap[postId] ?? false);
     });
   }
+
+  void updateLikeStatus(String postId, bool like) async {
+    DocumentReference postRef = _firestore.collection('posts').doc(postId);
+    DocumentSnapshot postSnapshot = await postRef.get();
+    Map<String, dynamic> postData = postSnapshot.data() as Map<String, dynamic>;
+
+    List<String> likes = List<String>.from(postData['likes'] ?? []);
+    List<String> dislikes = List<String>.from(postData['dislikes'] ?? []);
+
+    if (like) {
+      if (!likes.contains(currentUserId)) {
+        likes.add(currentUserId);
+        if (dislikes.contains(currentUserId)) {
+          dislikes.remove(currentUserId);
+        }
+        await postRef.update({
+          'likes': likes,
+          'dislikes': dislikes,
+        });
+      }
+    } else {
+      if (!dislikes.contains(currentUserId)) {
+        dislikes.add(currentUserId);
+        if (likes.contains(currentUserId)) {
+          likes.remove(currentUserId);
+        }
+        await postRef.update({
+          'likes': likes,
+          'dislikes': dislikes,
+        });
+      }
+    }
+  }
+
+  Future<int> getCommentsCount(String postId) async {
+    QuerySnapshot commentsSnapshot = await _firestore.collection('posts').doc(postId).collection('comments').get();
+    return commentsSnapshot.size;
+  }
+
   @override
   Widget build(BuildContext context) {
     return StreamBuilder<QuerySnapshot>(
@@ -81,12 +134,12 @@ class _PostCardState extends State<PostCard> {
           itemBuilder: (context, index) {
             DocumentSnapshot post = snapshot.data!.docs[index];
             Map<String, dynamic> postData = post.data() as Map<String, dynamic>;
-            String postId =post.id;
-            // Track likes and dislikes independently for each post
-            int likesCount = postData['likesCount'] ?? 0;
-            int dislikesCount = postData['dislikesCount'] ?? 0;
-            bool hasLiked = postData['hasLiked'] ?? false;
-            bool hasDisliked = postData['hasDisliked'] ?? false;
+            String postId = post.id;
+
+            List<String> likes = List<String>.from(postData['likes'] ?? []);
+            List<String> dislikes = List<String>.from(postData['dislikes'] ?? []);
+            bool hasLiked = likes.contains(currentUserId);
+            bool hasDisliked = dislikes.contains(currentUserId);
 
             return Container(
               margin: const EdgeInsets.symmetric(vertical: 8.0),
@@ -172,22 +225,7 @@ class _PostCardState extends State<PostCard> {
                       children: [
                         GestureDetector(
                           onTap: () {
-                            setState(() {
-                              if (!hasLiked) {
-                                likesCount++;
-                                hasLiked = true;
-                                if (hasDisliked) {
-                                  dislikesCount--;
-                                  hasDisliked = false;
-                                }
-                                _firestore.collection('posts').doc(post.id).update({
-                                  'likesCount': likesCount,
-                                  'hasLiked': true,
-                                  'dislikesCount': dislikesCount,
-                                  'hasDisliked': false,
-                                });
-                              }
-                            });
+                            updateLikeStatus(postId, true);
                           },
                           child: Row(
                             children: [
@@ -198,7 +236,7 @@ class _PostCardState extends State<PostCard> {
                               ),
                               const SizedBox(width: 5),
                               Text(
-                                '$likesCount',
+                                '${likes.length}',
                                 style: const TextStyle(fontSize: 18),
                               ),
                             ],
@@ -207,22 +245,7 @@ class _PostCardState extends State<PostCard> {
                         const SizedBox(width: 20),
                         GestureDetector(
                           onTap: () {
-                            setState(() {
-                              if (!hasDisliked) {
-                                dislikesCount++;
-                                hasDisliked = true;
-                                if (hasLiked) {
-                                  likesCount--;
-                                  hasLiked = false;
-                                }
-                                _firestore.collection('posts').doc(post.id).update({
-                                  'dislikesCount': dislikesCount,
-                                  'hasDisliked': true,
-                                  'likesCount': likesCount,
-                                  'hasLiked': false,
-                                });
-                              }
-                            });
+                            updateLikeStatus(postId, false);
                           },
                           child: Row(
                             children: [
@@ -233,7 +256,7 @@ class _PostCardState extends State<PostCard> {
                               ),
                               const SizedBox(width: 5),
                               Text(
-                                '$dislikesCount',
+                                '${dislikes.length}',
                                 style: const TextStyle(fontSize: 18),
                               ),
                             ],
@@ -244,12 +267,11 @@ class _PostCardState extends State<PostCard> {
                           child: IconButton(
                             onPressed: () {
                               Navigator.push(
-                                  context,
-                                  MaterialPageRoute(
-                                    builder: (context) => commentPage(),
-                                  )
+                                context,
+                                MaterialPageRoute(
+                                  builder: (context) => CommentPage(postId: postId),
+                                ),
                               );
-
                             },
                             icon: Icon(Icons.chat_bubble_outline),
                             iconSize: 30,
@@ -257,15 +279,16 @@ class _PostCardState extends State<PostCard> {
                         ),
                         const Spacer(),
                         if (showLocationMap[postId] ?? false)
-                           GestureDetector(
-                           onTap: () {
-                           toggleLocation(postId);
-                           },
-                         child:  Text(
-                            postData['location'] ?? 'No location',
-                            style: const TextStyle(fontSize: 16),
+                          GestureDetector(
+                            onTap: () {
+                              toggleLocation(postId);
+                            },
+                            child: Text(
+                              postData['location'] ?? 'No location',
+                              style: const TextStyle(fontSize: 16),
+                            ),
                           )
-                           )else
+                        else
                           IconButton(
                             onPressed: () {
                               toggleLocation(postId);
@@ -277,17 +300,45 @@ class _PostCardState extends State<PostCard> {
                       ],
                     ),
                   ),
-
                   Padding(
                     padding: const EdgeInsets.all(8.0),
                     child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            '${postData['username'] ?? 'Anonymous'}: ${postData['Caption'] ?? 'No caption'}',
-                            style: const TextStyle(fontSize: 16),
-                          ),
-                        ]
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          '${postData['username'] ?? 'Anonymous'}: ${postData['Caption'] ?? 'No caption'}',
+                          style: const TextStyle(fontSize: 16),
+                        ),
+                        StreamBuilder<QuerySnapshot>(
+                          stream: _firestore.collection('posts').doc(postId).collection('comments').snapshots(),
+                          builder: (context, snapshot) {
+                            if (!snapshot.hasData) {
+                              return const Text('Loading comments...');
+                            }
+
+                            int commentsCount = snapshot.data!.size;
+
+                            return GestureDetector(
+                              onTap: () {
+                                Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                    builder: (context) => CommentPage(postId: postId),
+                                  ),
+                                );
+                              },
+                              child: Text(
+                                'View all $commentsCount comments',
+                                style: const TextStyle(
+                                  fontSize: 16,
+                                  color: Colors.blue,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                            );
+                          },
+                        ),
+                      ],
                     ),
                   ),
                 ],
