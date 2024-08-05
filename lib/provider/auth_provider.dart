@@ -204,4 +204,24 @@ class AuthProvider with ChangeNotifier {
       notifyListeners();
     }
   }
+
+  // New method to delete a post
+  Future<void> deletePost(String postUrl) async {
+    try {
+      // Find the post document by its image URL and delete it
+      final querySnapshot = await FirebaseFirestore.instance
+          .collection('posts')
+          .where('imageUrl', isEqualTo: postUrl)
+          .get();
+
+      if (querySnapshot.docs.isNotEmpty) {
+        final docId = querySnapshot.docs.first.id;
+        await FirebaseFirestore.instance.collection('posts').doc(docId).delete();
+        notifyListeners();
+      }
+    } catch (e) {
+      // Handle any errors that occur during the deletion
+      print('Error deleting post: $e');
+    }
+  }
 }

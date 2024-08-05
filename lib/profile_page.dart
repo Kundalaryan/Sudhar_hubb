@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:test_app/account_screen.dart';
+import 'package:test_app/profile_detail.dart';
 import 'package:test_app/provider/auth_provider.dart';
 
 class ProfilePage extends StatefulWidget {
@@ -105,9 +106,19 @@ class _ProfilePageState extends State<ProfilePage> {
                   ),
                   itemCount: userPosts.length,
                   itemBuilder: (context, index) {
-                    return Image.network(
+                    return GestureDetector(
+                        onTap: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => PostDetailPage(postUrl: userPosts[index]),
+                        ),
+                      );
+                    },
+                    child:Image.network(
                       userPosts[index],
                       fit: BoxFit.cover,
+                    ),
                     );
                   },
                 ),
