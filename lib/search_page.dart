@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 
+import 'package:test_app/profile_detail.dart';
+
 class SearchPage extends StatefulWidget {
   @override
   _SearchPageState createState() => _SearchPageState();
@@ -69,9 +71,20 @@ class _SearchPageState extends State<SearchPage> {
                 ),
                 itemCount: _searchResults.length,
                 itemBuilder: (context, index) {
-                  return Image.network(
-                    _searchResults[index]['imageUrl'],
-                    fit: BoxFit.cover,
+                  final postUrl = _searchResults[index]['imageUrl'];
+                  return GestureDetector(
+                    onTap: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => PostDetailPage(postUrl: postUrl),
+                        ),
+                      );
+                    },
+                    child: Image.network(
+                      postUrl,
+                      fit: BoxFit.cover,
+                    ),
                   );
                 },
               ),

@@ -205,10 +205,8 @@ class AuthProvider with ChangeNotifier {
     }
   }
 
-  // New method to delete a post
   Future<void> deletePost(String postUrl) async {
     try {
-      // Find the post document by its image URL and delete it
       final querySnapshot = await FirebaseFirestore.instance
           .collection('posts')
           .where('imageUrl', isEqualTo: postUrl)
@@ -220,8 +218,64 @@ class AuthProvider with ChangeNotifier {
         notifyListeners();
       }
     } catch (e) {
-      // Handle any errors that occur during the deletion
       print('Error deleting post: $e');
+    }
+  }
+
+  // New method to fetch the userId of the post
+  Future<String?> getPostUserId(String postUrl) async {
+    try {
+      final querySnapshot = await FirebaseFirestore.instance
+          .collection('posts')
+          .where('imageUrl', isEqualTo: postUrl)
+          .get();
+
+      if (querySnapshot.docs.isNotEmpty) {
+        final doc = querySnapshot.docs.first;
+        return doc['userId'] as String?;
+      }
+      return null;
+    } catch (e) {
+      print('Error fetching post userId: $e');
+      return null;
+    }
+  }
+
+  // New methods to fetch likes and comments
+  Future<int> getPostLikes(String postUrl) async {
+    try {
+      final querySnapshot = await FirebaseFirestore.instance
+          .collection('posts')
+          .where('imageUrl', isEqualTo: postUrl)
+          .get();
+
+      if (querySnapshot.docs.isNotEmpty) {
+        final doc = querySnapshot.docs.first;
+        return doc['likes'] as int? ?? 0;
+      }
+      return 0;
+    } catch (e) {
+      print('Error fetching post likes: $e');
+      return 0;
+    }
+  }
+
+  Future<List<Map<String, dynamic>>> getPostComments(String postUrl) async {
+    try {
+      final querySnapshot = await FirebaseFirestore.instance
+          .collection('posts')
+          .where('imageUrl', isEqualTo: postUrl)
+          .get();
+
+      if (querySnapshot.docs.isNotEmpty) {
+        final doc = querySnapshot.docs.first;
+        final List<dynamic> comments = doc['comments'] as List<dynamic>? ?? [];
+        return comments.map((comment) => comment as Map<String, dynamic>).toList();
+      }
+      return [];
+    } catch (e) {
+      print('Error fetching post comments: $e');
+      return [];
     }
   }
 }

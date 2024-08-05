@@ -65,20 +65,83 @@ class _EditProfilePageState extends State<EditProfilePage> {
   Future<void> _updateProfile() async {
     User? user = _auth.currentUser;
     if (user != null) {
-      String profilePicUrl = _profileImageUrl; // Use existing image URL by default
-      if (_profileImage != null) {
-        final ref = _storage.ref().child('profile_pics/${user.uid}');
-        await ref.putFile(_profileImage!);
-        profilePicUrl = await ref.getDownloadURL();
+      // Show saving dialog
+      showDialog(
+        context: context,
+        barrierDismissible: false, // Prevents closing the dialog by tapping outside
+        builder: (context) {
+          return AlertDialog(
+            content: Row(
+              children: [
+                CircularProgressIndicator(),
+                SizedBox(width: 20),
+                Text('Saving profile...'),
+              ],
+            ),
+          );
+        },
+      );
+
+      try {
+        String profilePicUrl = _profileImageUrl; // Use existing image URL by default
+        if (_profileImage != null) {
+          final ref = _storage.ref().child('profile_pics/${user.uid}');
+          await ref.putFile(_profileImage!);
+          profilePicUrl = await ref.getDownloadURL();
+        }
+        await _firestore.collection('users').doc(user.uid).update({
+          'username': _usernameController.text,
+          'name': _nameController.text,
+          'email': _emailController.text,
+          'address': _addressController.text,
+          'profilePicture': profilePicUrl,
+        });
+
+        // Dismiss the saving dialog
+        Navigator.pop(context);
+
+        // Show success dialog
+        showDialog(
+          context: context,
+          builder: (context) {
+            return AlertDialog(
+              title: Text('Profile Updated'),
+              content: Text('Your profile has been updated successfully.'),
+              actions: [
+                TextButton(
+                  onPressed: () {
+                    Navigator.pop(context); // Close the success dialog
+                    Navigator.pop(context); // Navigate back to the previous screen
+                  },
+                  child: Text('OK'),
+                ),
+              ],
+            );
+          },
+        );
+      } catch (e) {
+        // Dismiss the saving dialog if an error occurs
+        Navigator.pop(context);
+
+        // Show error dialog
+        showDialog(
+          context: context,
+          builder: (context) {
+            return AlertDialog(
+              title: Text('Error'),
+              content: Text('An error occurred while updating the profile. Please try again.'),
+              actions: [
+                TextButton(
+                  onPressed: () {
+                    Navigator.pop(context); // Close the error dialog
+                  },
+                  child: Text('OK'),
+                ),
+              ],
+            );
+          },
+        );
       }
-      await _firestore.collection('users').doc(user.uid).update({
-        'username': _usernameController.text,
-        'name': _nameController.text,
-        'email': _emailController.text,
-        'address': _addressController.text,
-        'profilePicture': profilePicUrl,
-      });
-      Navigator.pop(context);
     }
   }
 

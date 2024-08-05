@@ -15,11 +15,30 @@ class PostDetailPage extends StatelessWidget {
       appBar: AppBar(
         title: Text('Post Detail'),
         actions: [
-          IconButton(
-            icon: Icon(Icons.delete),
-            onPressed: () async {
-              await authProvider.deletePost(postUrl);
-              Navigator.pop(context);
+          FutureBuilder<String?>(
+            future: authProvider.getPostUserId(postUrl),
+            builder: (context, snapshot) {
+              if (snapshot.connectionState == ConnectionState.waiting) {
+                return SizedBox();
+              }
+              if (snapshot.hasError || !snapshot.hasData) {
+                return SizedBox();
+              }
+
+              final postUserId = snapshot.data;
+              final currentUserId = authProvider.user?.uid;
+
+              if (postUserId == currentUserId) {
+                return IconButton(
+                  icon: Icon(Icons.delete),
+                  onPressed: () async {
+                    await authProvider.deletePost(postUrl);
+                    Navigator.pop(context);
+                  },
+                );
+              } else {
+                return SizedBox();
+              }
             },
           ),
         ],
