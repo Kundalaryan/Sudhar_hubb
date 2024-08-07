@@ -15,7 +15,7 @@ class _AccountScreenState extends State<AccountScreen> {
   bool isDarkMode = false;
   String selectedLanguage = 'English'; // Default language
 
-  final List<String> languages = ['English', 'Hindi']; // Add more languages here
+  final List<String> languages = ['English']; // Add more languages here
 
   @override
   Widget build(BuildContext context) {
