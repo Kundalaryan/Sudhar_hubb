@@ -16,6 +16,7 @@ class _ForgotPasswordState extends State<ForgotPassword> {
 
   @override
   Widget build(BuildContext context) {
+
     // Password TextField
     Widget _buildEmailTextField() {
       return Container(

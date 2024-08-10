@@ -185,6 +185,7 @@ class _LoginPageState extends State<LoginPage> {
       ],
     );
   }
+
   _signup(context) {
     return Row(
       mainAxisAlignment: MainAxisAlignment.center,
