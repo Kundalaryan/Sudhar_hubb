@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:test_app/account_screen.dart';
-import 'package:test_app/profile_detail.dart';
-import 'package:test_app/provider/auth_provider.dart';
+import 'package:SudharHub/account_screen.dart';
+import 'package:SudharHub/profile_detail.dart';
+import 'package:SudharHub/provider/auth_provider.dart';
 
 class ProfilePage extends StatefulWidget {
   @override

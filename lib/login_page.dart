@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
-import 'package:test_app/forget_password.dart';
-import 'package:test_app/provider/auth_provider.dart';
-import 'package:test_app/signup_page.dart';
+import 'package:SudharHub/forget_password.dart';
+import 'package:SudharHub/provider/auth_provider.dart';
+import 'package:SudharHub/signup_page.dart';
 
 class LoginPage extends StatefulWidget {
   @override

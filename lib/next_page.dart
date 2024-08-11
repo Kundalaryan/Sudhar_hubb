@@ -4,7 +4,7 @@ import 'package:firebase_storage/firebase_storage.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:provider/provider.dart';
-import 'package:test_app/provider/auth_provider.dart';
+import 'package:SudharHub/provider/auth_provider.dart';
 
 class NextScreen extends StatefulWidget {
   final File imageFile;

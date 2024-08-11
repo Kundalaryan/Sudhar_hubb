@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:google_nav_bar/google_nav_bar.dart';
-import 'package:test_app/add_post.dart';
-import 'package:test_app/profile_page.dart';
-import 'package:test_app/search_page.dart';
-import 'package:test_app/feed_page.dart';
+import 'package:SudharHub/add_post.dart';
+import 'package:SudharHub/profile_page.dart';
+import 'package:SudharHub/search_page.dart';
+import 'package:SudharHub/feed_page.dart';
 
 class HomePage extends StatefulWidget {
   const HomePage({super.key});

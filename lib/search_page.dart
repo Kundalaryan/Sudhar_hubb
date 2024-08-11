@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 
-import 'package:test_app/profile_detail.dart';
+import 'package:SudharHub/profile_detail.dart';
 
 class SearchPage extends StatefulWidget {
   @override

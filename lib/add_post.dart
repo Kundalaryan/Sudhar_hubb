@@ -1,7 +1,7 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
-import 'package:test_app/next_page.dart';
+import 'package:SudharHub/next_page.dart';
 
 
 

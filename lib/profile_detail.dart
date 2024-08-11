@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:test_app/provider/auth_provider.dart';
+import 'package:SudharHub/provider/auth_provider.dart';
 
 class PostDetailPage extends StatelessWidget {
   final String postUrl;

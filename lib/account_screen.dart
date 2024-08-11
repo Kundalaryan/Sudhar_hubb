@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:test_app/provider/auth_provider.dart';
-import 'package:test_app/provider/theme_provider.dart';
+import 'package:SudharHub/provider/auth_provider.dart';
+import 'package:SudharHub/provider/theme_provider.dart';
 import 'edit_profile_page.dart'; // Import the EditProfilePage
 
 class AccountScreen extends StatefulWidget {
