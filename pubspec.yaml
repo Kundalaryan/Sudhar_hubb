@@ -48,6 +48,7 @@ dependencies:
   firebase_storage: ^12.1.1
   google_nav_bar: ^5.0.6
   provider: ^6.1.2
+  flutter_launcher_icons: ^0.13.1
 
 
 
@@ -76,6 +77,13 @@ flutter:
   # To add assets to your application, add an assets section, like this:
   assets:
     - assets/images/
+    - assets/icon/
+
+flutter_launcher_icons:
+    android: true
+    ios: true
+    image_path: assets/icon/icon.ico
+
 
 
   # An image asset can refer to one or more resolution-specific "variants", see
@@ -103,3 +111,4 @@ flutter:
   #
   # For details regarding fonts from package dependencies,
   # see https://flutter.dev/custom-fonts/#from-packages
+
